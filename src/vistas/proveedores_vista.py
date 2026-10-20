@@ -4,12 +4,11 @@ from vistas.crud_base import Campo, Columna, CrudVista
 
 class ProveedoresVista:
 
-    def __init__(self, padre, proveedor_controlador, ciudad_controlador):
-        self.padre = padre
+    def __init__(self, proveedor_controlador, ciudad_controlador):
         self.controlador = proveedor_controlador
         self.ciudad_controlador = ciudad_controlador
 
-    def mostrar(self):
+    def construir(self, contenedor):
         c = self.controlador
 
         def cargar():
@@ -29,8 +28,7 @@ class ProveedoresVista:
                     v["telefono"], v["correo"], v["estado"])
 
         CrudVista(
-            self.padre,
-            titulo="Proveedores",
+            contenedor,
             subtitulo="Empresas a las que se pueden hacer pedidos de productos.",
             columnas=[Columna("nit", "NIT", 110),
                       Columna("nombre", "Nombre", 200),
@@ -52,5 +50,4 @@ class ProveedoresVista:
             eliminar=c.eliminar,
             texto_nuevo="Nuevo proveedor",
             texto_editar="Editar proveedor",
-            tamano=(1280, 760),
-        ).mostrar()
+        ).construir()

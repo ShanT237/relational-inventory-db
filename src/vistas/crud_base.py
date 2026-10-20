@@ -2,7 +2,8 @@
 
 Cada módulo (ciudades, categorías, proveedores, productos) solo declara sus
 columnas, sus campos y qué hacer al cargar/crear/modificar/eliminar; el diseño y
-el comportamiento (búsqueda, filtro, orden, formulario) viven aquí."""
+el comportamiento (búsqueda, filtro, orden, formulario) viven aquí.
+La pantalla se dibuja DENTRO de un contenedor (no abre ventanas nuevas)."""
 import tkinter as tk
 from dataclasses import dataclass
 from tkinter import messagebox, ttk
@@ -36,13 +37,13 @@ def _clave_orden(valor):
 
 class CrudVista:
 
-    def __init__(self, padre, titulo, subtitulo, columnas, campos, cargar, crear,
-                 modificar, eliminar, texto_nuevo, texto_editar, tamano=(1100, 680),
+    def __init__(self, contenedor, subtitulo, columnas, campos, cargar, crear,
+                 modificar, eliminar, texto_nuevo, texto_editar,
                  tiene_estado=True, clave_nombre="nombre"):
         """cargar() -> lista de dicts con la clave 'id' (y 'estado' si tiene_estado).
         crear(valores) / modificar(id, valores) / eliminar(id) llaman al controlador."""
-        self.padre = padre
-        self.titulo = titulo
+        self.contenedor = contenedor
+        self.ventana = contenedor.winfo_toplevel()   # solo para cuadros de diálogo
         self.subtitulo = subtitulo
         self.columnas = columnas
         self.campos = campos
@@ -52,7 +53,6 @@ class CrudVista:
         self.eliminar = eliminar
         self.texto_nuevo = texto_nuevo
         self.texto_editar = texto_editar
-        self.tamano = tamano
         self.tiene_estado = tiene_estado
         self.clave_nombre = clave_nombre
 
@@ -62,41 +62,20 @@ class CrudVista:
         self.orden = None             # (clave de columna, descendente)
         self.campos_widgets = {}      # clave -> (obtener, asignar, widget)
 
-    # ------------------------------------------------------------------ ventana
-    def mostrar(self):
-        v = tk.Toplevel(self.padre)
-        self.ventana = v
-        v.title(self.titulo)
-        v.configure(bg=e.FONDO)
-        v.minsize(900, 560)
-        e.centrar(v, self.tamano[0], self.tamano[1], self.padre)
-        v.transient(self.padre)
-        v.grab_set()
-
-        self._construir_encabezado()
-        cuerpo = ttk.Frame(v, padding=20)
+    # ------------------------------------------------------------------ pantalla
+    def construir(self):
+        """Dibuja la pantalla dentro del contenedor."""
+        ttk.Label(self.contenedor, text=self.subtitulo, style="Suave.TLabel").pack(
+            anchor="w", pady=(0, 12))
+        cuerpo = ttk.Frame(self.contenedor)
         cuerpo.pack(fill="both", expand=True)
         cuerpo.columnconfigure(0, weight=1)
-        cuerpo.columnconfigure(1, weight=0, minsize=370)
+        cuerpo.columnconfigure(1, weight=0, minsize=350)
         cuerpo.rowconfigure(0, weight=1)
         self._construir_tabla(cuerpo)
         self._construir_formulario(cuerpo)
-
-        v.bind("<Escape>", lambda _ev: v.destroy())
-        v.bind("<Control-s>", lambda _ev: self._guardar())
-        v.bind("<Return>", self._al_enter)
-
         self._recargar()
         self._nuevo()
-
-    def _construir_encabezado(self):
-        franja = tk.Frame(self.ventana, bg=e.OSCURO)
-        franja.pack(fill="x")
-        interior = tk.Frame(franja, bg=e.OSCURO)
-        interior.pack(fill="x", padx=24, pady=16)
-        ttk.Label(interior, text=self.titulo, style="Encabezado.TLabel").pack(anchor="w")
-        ttk.Label(interior, text=self.subtitulo, style="EncabezadoSub.TLabel").pack(
-            anchor="w", pady=(2, 0))
 
     # -------------------------------------------------------------------- tabla
     def _construir_tabla(self, cuerpo):
@@ -107,7 +86,7 @@ class CrudVista:
         barra.pack(fill="x")
         ttk.Label(barra, text="Buscar", style="Campo.Tarjeta.TLabel").pack(side="left")
         self.var_buscar = tk.StringVar()
-        self.entrada_buscar = ttk.Entry(barra, textvariable=self.var_buscar, width=28)
+        self.entrada_buscar = ttk.Entry(barra, textvariable=self.var_buscar, width=24)
         self.entrada_buscar.pack(side="left", padx=(8, 16))
         self.var_buscar.trace_add("write", lambda *_: self._pintar())
 
@@ -115,7 +94,7 @@ class CrudVista:
         if self.tiene_estado:
             ttk.Label(barra, text="Mostrar", style="Campo.Tarjeta.TLabel").pack(side="left")
             filtro = ttk.Combobox(barra, textvariable=self.var_estado, state="readonly",
-                                  values=("Todos", "Activos", "Inactivos"), width=11)
+                                  values=("Todos", "Activos", "Inactivos"), width=10)
             filtro.pack(side="left", padx=(8, 0))
             filtro.bind("<<ComboboxSelected>>", lambda _ev: self._pintar())
 
@@ -144,34 +123,69 @@ class CrudVista:
     def _construir_formulario(self, cuerpo):
         derecha = e.tarjeta(cuerpo)
         derecha.grid(row=0, column=1, sticky="nsew", padx=(16, 0))
-        contenido = ttk.Frame(derecha, style="Tarjeta.TFrame", padding=22)
+        contenido = ttk.Frame(derecha, style="Tarjeta.TFrame", padding=(20, 18))
         contenido.pack(fill="both", expand=True)
 
+        # Arriba: título del modo. Abajo (fijos): mensaje y botones. En medio: campos
+        # con desplazamiento, para que los botones nunca queden fuera de la pantalla.
         self.lbl_modo = ttk.Label(contenido, text="", style="Seccion.Tarjeta.TLabel")
-        self.lbl_modo.pack(anchor="w")
+        self.lbl_modo.pack(anchor="w", side="top")
 
-        for campo in self.campos:
-            if campo.tipo != "check":
-                texto = campo.etiqueta + (" *" if campo.obligatorio else "")
-                ttk.Label(contenido, text=texto, style="Campo.Tarjeta.TLabel").pack(
-                    anchor="w", pady=(12, 4))
-            self.campos_widgets[campo.clave] = self._crear_widget(contenido, campo)
-
-        self.lbl_mensaje = ttk.Label(contenido, text="", style="Error.Tarjeta.TLabel",
-                                     wraplength=310, justify="left")
-        self.lbl_mensaje.pack(anchor="w", pady=(14, 0))
-
-        self.btn_guardar = ttk.Button(contenido, text="Guardar", style="Primario.TButton",
-                                      command=self._guardar)
-        self.btn_guardar.pack(fill="x", pady=(14, 8))
         fila = ttk.Frame(contenido, style="Tarjeta.TFrame")
-        fila.pack(fill="x")
+        fila.pack(fill="x", side="bottom")
         fila.columnconfigure((0, 1), weight=1, uniform="b")
         ttk.Button(fila, text="Nuevo", command=self._nuevo).grid(
             row=0, column=0, sticky="ew", padx=(0, 4))
         self.btn_eliminar = ttk.Button(fila, text="Eliminar", style="Peligro.TButton",
                                        command=self._eliminar)
         self.btn_eliminar.grid(row=0, column=1, sticky="ew", padx=(4, 0))
+
+        self.btn_guardar = ttk.Button(contenido, text="Guardar", style="Primario.TButton",
+                                      command=self._guardar)
+        self.btn_guardar.pack(fill="x", side="bottom", pady=(10, 8))
+
+        self.lbl_mensaje = ttk.Label(contenido, text="", style="Error.Tarjeta.TLabel",
+                                     wraplength=290, justify="left")
+        self.lbl_mensaje.pack(anchor="w", side="bottom", pady=(8, 0))
+
+        zona = tk.Frame(contenido, bg=e.TARJETA)
+        zona.pack(fill="both", expand=True, side="top")
+        lienzo = tk.Canvas(zona, bg=e.TARJETA, highlightthickness=0, borderwidth=0)
+        barra = ttk.Scrollbar(zona, orient="vertical", command=lienzo.yview)
+        lienzo.configure(yscrollcommand=barra.set)
+        marco = ttk.Frame(lienzo, style="Tarjeta.TFrame")
+        id_marco = lienzo.create_window((0, 0), window=marco, anchor="nw")
+        lienzo.pack(side="left", fill="both", expand=True)
+
+        def ajustar(_ev=None):
+            lienzo.configure(scrollregion=lienzo.bbox("all"))
+            lienzo.itemconfigure(id_marco, width=lienzo.winfo_width())
+            necesita = marco.winfo_reqheight() > lienzo.winfo_height()
+            if necesita and not barra.winfo_ismapped():
+                barra.pack(side="right", fill="y")
+            elif not necesita and barra.winfo_ismapped():
+                barra.pack_forget()
+
+        marco.bind("<Configure>", ajustar)
+        lienzo.bind("<Configure>", ajustar)
+
+        def rueda(ev):
+            try:
+                if marco.winfo_reqheight() > lienzo.winfo_height():
+                    lienzo.yview_scroll(-1 * (ev.delta // 120), "units")
+            except tk.TclError:
+                pass
+
+        lienzo.bind("<Enter>", lambda _ev: lienzo.bind_all("<MouseWheel>", rueda))
+        lienzo.bind("<Leave>", lambda _ev: lienzo.unbind_all("<MouseWheel>"))
+        lienzo.bind("<Destroy>", lambda _ev: lienzo.unbind_all("<MouseWheel>"))
+
+        for campo in self.campos:
+            if campo.tipo != "check":
+                texto = campo.etiqueta + (" *" if campo.obligatorio else "")
+                ttk.Label(marco, text=texto, style="Campo.Tarjeta.TLabel").pack(
+                    anchor="w", pady=(10, 4))
+            self.campos_widgets[campo.clave] = self._crear_widget(marco, campo)
 
     def _crear_widget(self, padre, campo):
         """Crea el control del campo y devuelve (obtener, asignar, widget)."""
@@ -181,6 +195,7 @@ class CrudVista:
                         highlightbackground=e.BORDE_FUERTE, highlightcolor=e.PRIMARIO,
                         insertbackground=e.TEXTO)
             w.pack(fill="x")
+            w.bind("<Control-s>", self._guardar)
 
             def asignar(valor):
                 w.delete("1.0", "end")
@@ -193,28 +208,33 @@ class CrudVista:
             a_texto = {id_: texto for id_, texto in pares}
             w = ttk.Combobox(padre, state="readonly", values=[t for _, t in pares])
             w.pack(fill="x")
-            return ((lambda: a_id.get(w.get())),
-                    (lambda valor: w.set(a_texto.get(valor, ""))), w)
+            obtenido = (lambda: a_id.get(w.get())), (lambda valor: w.set(a_texto.get(valor, "")))
 
-        if campo.tipo == "combo_texto":
+        elif campo.tipo == "combo_texto":
             w = ttk.Combobox(padre, values=list(campo.opciones() if campo.opciones else []))
             w.pack(fill="x")
-            return w.get, (lambda valor: w.set("" if valor is None else str(valor))), w
+            obtenido = w.get, (lambda valor: w.set("" if valor is None else str(valor)))
 
-        if campo.tipo == "check":
+        elif campo.tipo == "check":
             variable = tk.BooleanVar(value=True)
             w = ttk.Checkbutton(padre, text=campo.etiqueta, variable=variable,
                                 style="Tarjeta.TCheckbutton")
-            w.pack(anchor="w", pady=(16, 0))
-            return variable.get, (lambda valor: variable.set(bool(valor))), w
+            w.pack(anchor="w", pady=(14, 0))
+            obtenido = variable.get, (lambda valor: variable.set(bool(valor)))
 
-        w = ttk.Entry(padre)
-        w.pack(fill="x")
+        else:
+            w = ttk.Entry(padre)
+            w.pack(fill="x")
 
-        def asignar_texto(valor):
-            w.delete(0, "end")
-            w.insert(0, "" if valor is None else str(valor))
-        return w.get, asignar_texto, w
+            def asignar_texto(valor):
+                w.delete(0, "end")
+                w.insert(0, "" if valor is None else str(valor))
+            obtenido = w.get, asignar_texto
+
+        # Enter y Ctrl+S guardan cuando el foco está en este campo.
+        w.bind("<Return>", self._guardar)
+        w.bind("<Control-s>", self._guardar)
+        return obtenido[0], obtenido[1], w
 
     # ----------------------------------------------------------- datos y tabla
     def _recargar(self):
@@ -272,10 +292,10 @@ class CrudVista:
         self.lbl_mensaje.config(
             text=texto, style="Error.Tarjeta.TLabel" if error else "Exito.Tarjeta.TLabel")
         if texto and not error:
-            self.ventana.after(3500, self._borrar_mensaje, texto)
+            self.lbl_mensaje.after(3500, self._borrar_mensaje, texto)
 
     def _borrar_mensaje(self, texto):
-        if self.ventana.winfo_exists() and self.lbl_mensaje.cget("text") == texto:
+        if self.lbl_mensaje.winfo_exists() and self.lbl_mensaje.cget("text") == texto:
             self.lbl_mensaje.config(text="")
 
     def _nuevo(self, limpiar_mensaje=True):
@@ -288,8 +308,7 @@ class CrudVista:
         self.btn_eliminar.state(["disabled"])
         if limpiar_mensaje:
             self.lbl_mensaje.config(text="")
-        primero = self.campos_widgets[self.campos[0].clave][2]
-        primero.focus_set()
+        self.campos_widgets[self.campos[0].clave][2].focus_set()
 
     def _al_seleccionar(self, _evento=None):
         seleccion = self.tabla.selection()
@@ -319,13 +338,14 @@ class CrudVista:
                 texto = "Cambios guardados correctamente."
         except ReglaDominioError as error:
             self._mensaje(str(error), error=True)
-            return
+            return "break"
         except Exception as error:
             messagebox.showerror("Error", f"No se pudo guardar:\n{error}", parent=self.ventana)
-            return
+            return "break"
         self._recargar()
         self._nuevo(limpiar_mensaje=False)
         self._mensaje(texto)
+        return "break"
 
     def _eliminar(self):
         if self.id_seleccionado is None:
@@ -347,11 +367,3 @@ class CrudVista:
         self._recargar()
         self._nuevo(limpiar_mensaje=False)
         self._mensaje("Registro eliminado.")
-
-    def _al_enter(self, evento):
-        # Enter guarda, salvo en el buscador, la tabla, los botones o el cuadro de texto.
-        if evento.widget in (self.entrada_buscar, self.tabla):
-            return
-        if isinstance(evento.widget, (tk.Text, ttk.Button)):
-            return
-        self._guardar()

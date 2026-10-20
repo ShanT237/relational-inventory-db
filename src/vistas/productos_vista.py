@@ -6,12 +6,11 @@ UNIDADES = ("unidad", "kg", "g", "libra", "litro", "ml", "caja", "paquete", "doc
 
 class ProductosVista:
 
-    def __init__(self, padre, producto_controlador, categoria_controlador):
-        self.padre = padre
+    def __init__(self, producto_controlador, categoria_controlador):
         self.controlador = producto_controlador
         self.categoria_controlador = categoria_controlador
 
-    def mostrar(self):
+    def construir(self, contenedor):
         c = self.controlador
 
         def cargar():
@@ -31,8 +30,7 @@ class ProductosVista:
                     v["unidad_medida"], v["estado"])
 
         CrudVista(
-            self.padre,
-            titulo="Productos",
+            contenedor,
             subtitulo="Catálogo de productos que se pueden adquirir con los proveedores.",
             columnas=[Columna("codigo", "Código", 100),
                       Columna("nombre", "Nombre", 220),
@@ -53,6 +51,5 @@ class ProductosVista:
             eliminar=c.eliminar,
             texto_nuevo="Nuevo producto",
             texto_editar="Editar producto",
-            tamano=(1200, 740),
             clave_nombre="nombre",
-        ).mostrar()
+        ).construir()

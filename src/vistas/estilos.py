@@ -125,6 +125,8 @@ def tarjeta(padre, **opciones):
 def centrar(ventana, ancho, alto, padre=None):
     """Fija el tamaño de la ventana y la centra (sobre el padre, si lo hay)."""
     ventana.update_idletasks()
+    ancho = min(ancho, ventana.winfo_screenwidth() - 40)
+    alto = min(alto, ventana.winfo_screenheight() - 100)
     if padre is not None and padre.winfo_viewable():
         x = padre.winfo_rootx() + (padre.winfo_width() - ancho) // 2
         y = padre.winfo_rooty() + (padre.winfo_height() - alto) // 2

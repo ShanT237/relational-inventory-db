@@ -29,7 +29,7 @@ class LoginVista:
         tk.Label(lateral, text="Gestión de\nProveedores\ny Productos", bg=e.OSCURO,
                  fg="#FFFFFF", font=(e.FAMILIA, 24, "bold"), justify="left").pack(
             anchor="w", padx=36)
-        tk.Label(lateral, text="Bienvenidos a\njjs", bg=e.OSCURO,
+        tk.Label(lateral, text="Bases de Datos I\nUniversidad del Quindío", bg=e.OSCURO,
                  fg="#94A3B8", font=e.FUENTE, justify="left").pack(
             anchor="w", padx=36, pady=(16, 0))
 

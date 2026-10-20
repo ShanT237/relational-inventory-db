@@ -4,11 +4,10 @@ from vistas.crud_base import Campo, Columna, CrudVista
 
 class CiudadesVista:
 
-    def __init__(self, padre, ciudad_controlador):
-        self.padre = padre
+    def __init__(self, ciudad_controlador):
         self.controlador = ciudad_controlador
 
-    def mostrar(self):
+    def construir(self, contenedor):
         c = self.controlador
 
         def cargar():
@@ -16,8 +15,7 @@ class CiudadesVista:
                     for x in c.listar()]
 
         CrudVista(
-            self.padre,
-            titulo="Ciudades",
+            contenedor,
             subtitulo="Ciudades de Colombia donde se ubican los proveedores.",
             columnas=[Columna("id", "Id", 60, True),
                       Columna("nombre", "Nombre", 260),
@@ -30,6 +28,5 @@ class CiudadesVista:
             eliminar=c.eliminar,
             texto_nuevo="Nueva ciudad",
             texto_editar="Editar ciudad",
-            tamano=(1000, 620),
             tiene_estado=False,
-        ).mostrar()
+        ).construir()

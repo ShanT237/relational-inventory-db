@@ -4,11 +4,10 @@ from vistas.crud_base import Campo, Columna, CrudVista
 
 class CategoriasVista:
 
-    def __init__(self, padre, categoria_controlador):
-        self.padre = padre
+    def __init__(self, categoria_controlador):
         self.controlador = categoria_controlador
 
-    def mostrar(self):
+    def construir(self, contenedor):
         c = self.controlador
 
         def cargar():
@@ -18,8 +17,7 @@ class CategoriasVista:
                     for x in c.listar()]
 
         CrudVista(
-            self.padre,
-            titulo="Categorías",
+            contenedor,
             subtitulo="Familias en las que se clasifican los productos.",
             columnas=[Columna("id", "Id", 60, True),
                       Columna("nombre", "Nombre", 200),
@@ -34,5 +32,4 @@ class CategoriasVista:
             eliminar=c.eliminar,
             texto_nuevo="Nueva categoría",
             texto_editar="Editar categoría",
-            tamano=(1050, 640),
-        ).mostrar()
+        ).construir()
