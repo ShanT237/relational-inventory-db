@@ -178,3 +178,61 @@ proyecto-final-bd/
 - [x] Diagrama relacional de tablas normalizado
 - [x] Explicación general de la aplicación (este documento)
 - [ ] Aplicación funcionando: ingreso, entidades, transacciones, consultas, reportes y auditoría
+
+
+
+
+
+
+
+## Cómo ejecutar el proyecto
+
+### Primera vez (solo una vez)
+
+1. Instalar [Docker Desktop](https://www.docker.com/products/docker-desktop/) (con WSL) y abrirlo hasta que diga "Engine running".
+2. Instalar Python 3 y el "ODBC Driver 18 for SQL Server".
+3. Instalar las librerías:
+
+```
+pip install pyodbc reportlab
+```
+
+4. Clonar el repo y entrar a la carpeta:
+
+```
+git clone https://github.com/ShanT237/relational-inventory-db
+```
+
+5. Cargar la base de datos (tarda ~30 segundos y debe terminar con "Listo" en verde):
+
+```
+powershell -ExecutionPolicy Bypass -File restaurar-bd.ps1
+```
+
+6. Copiar `src/configuracion/configuracion_local.ejemplo.py` como `src/configuracion/configuracion_local.py` y dejarlo así:
+
+```python
+SERVIDOR = "127.0.0.1,1433"
+USUARIO = "sa"
+CLAVE = "TrioPerras2026"
+DRIVER = "ODBC Driver 18 for SQL Server"
+```
+
+### Cada vez que quieras usar la app
+
+1. Abrir Docker Desktop y esperar "Engine running".
+2. Prender el contenedor (botón play en Docker Desktop, o `docker compose up -d` en la carpeta del proyecto).
+3. Ejecutar:
+
+```
+python src/main.py
+```
+
+4. Entrar con el usuario administrador: **usuario: jjs contraseña: bd**
+
+### Notas
+
+- Cada persona tiene su propia copia de la BD; lo que cambie uno no lo ven los demás.
+- Para volver a los datos originales, correr de nuevo `restaurar-bd.ps1`.
+- Para apagar el contenedor: `docker compose stop` (no borra datos). No usar `docker compose down -v`, que sí borra todo.
+- No subir `configuracion_local.py` a GitHub (tiene la clave).
