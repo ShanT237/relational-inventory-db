@@ -115,6 +115,10 @@ def aplicar_tema(raiz):
                      bordercolor=TARJETA, lightcolor=BORDE_FUERTE, darkcolor=BORDE_FUERTE,
                      arrowcolor=SUAVE, relief="flat", arrowsize=14)
     estilo.map("Vertical.TScrollbar", background=[("active", "#94A3B8")])
+    estilo.configure("Horizontal.TScrollbar", background=BORDE_FUERTE, troughcolor=TARJETA,
+                     bordercolor=TARJETA, lightcolor=BORDE_FUERTE, darkcolor=BORDE_FUERTE,
+                     arrowcolor=SUAVE, relief="flat", arrowsize=14)
+    estilo.map("Horizontal.TScrollbar", background=[("active", "#94A3B8")])
 
 
 def tarjeta(padre, **opciones):

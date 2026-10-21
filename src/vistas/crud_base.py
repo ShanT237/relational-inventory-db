@@ -32,6 +32,9 @@ class Campo:
     opciones: Optional[Callable] = None   # combo: [(id, texto)]; combo_texto: [texto]
     obligatorio: bool = False
     bloqueado_al_editar: bool = False     # se elige al crear y luego no se puede cambiar
+    max_largo: int = 0                    # 0 = sin límite; si no, no deja escribir más caracteres
+    solo_digitos: bool = False            # solo deja escribir números
+    ayuda: str = ""                       # texto pequeño bajo el campo (formato esperado, ejemplo)
 
 
 _NUMERO = re.compile(r"^-?\d+(\.\d+)?$")
@@ -121,17 +124,33 @@ class CrudVista:
 
         marco = tk.Frame(izquierda, bg=e.TARJETA)
         marco.pack(fill="both", expand=True, padx=1, pady=(0, 1))
+        marco.columnconfigure(0, weight=1)
+        marco.rowconfigure(0, weight=1)
         self.tabla = ttk.Treeview(marco, columns=[c.clave for c in self.columnas],
                                   show="headings", selectmode="browse")
-        for c in self.columnas:
+        ultima = len(self.columnas) - 1
+        for i, c in enumerate(self.columnas):
             self.tabla.heading(c.clave, text=c.titulo,
                                command=lambda k=c.clave: self._ordenar(k))
-            self.tabla.column(c.clave, width=c.ancho, minwidth=50,
+            # Las columnas conservan su ancho; solo la última se estira. Si no caben
+            # en la pantalla, aparece la barra horizontal.
+            self.tabla.column(c.clave, width=c.ancho, minwidth=c.ancho if i == ultima else 50,
+                              stretch=(i == ultima),
                               anchor="center" if c.centrado else ("e" if c.derecha else "w"))
         scroll = ttk.Scrollbar(marco, orient="vertical", command=self.tabla.yview)
-        self.tabla.configure(yscrollcommand=scroll.set)
-        self.tabla.pack(side="left", fill="both", expand=True)
-        scroll.pack(side="right", fill="y")
+        scroll_h = ttk.Scrollbar(marco, orient="horizontal", command=self.tabla.xview)
+
+        def mover_horizontal(primero, ultimo):
+            scroll_h.set(primero, ultimo)
+            if float(primero) <= 0.0 and float(ultimo) >= 1.0:
+                scroll_h.grid_remove()          # todo cabe: se oculta
+            else:
+                scroll_h.grid()
+
+        self.tabla.configure(yscrollcommand=scroll.set, xscrollcommand=mover_horizontal)
+        self.tabla.grid(row=0, column=0, sticky="nsew")
+        scroll.grid(row=0, column=1, sticky="ns")
+        scroll_h.grid(row=1, column=0, sticky="ew")
         self.tabla.tag_configure("par", background=e.TARJETA)
         self.tabla.tag_configure("impar", background=e.FILA_IMPAR)
         self.tabla.tag_configure("inactivo", foreground="#94A3B8")
@@ -204,20 +223,44 @@ class CrudVista:
                 ttk.Label(marco, text=texto, style="Campo.Tarjeta.TLabel").pack(
                     anchor="w", pady=(10, 4))
             self.campos_widgets[campo.clave] = self._crear_widget(marco, campo)
+            if campo.ayuda:
+                ttk.Label(marco, text=campo.ayuda, style="Suave.Tarjeta.TLabel",
+                          font=(e.FAMILIA, 8), wraplength=290, justify="left").pack(
+                    anchor="w", pady=(3, 0))
 
     def _crear_widget(self, padre, campo):
         """Crea el control del campo y devuelve (obtener, asignar, widget)."""
         if campo.tipo == "area":
-            w = tk.Text(padre, height=4, wrap="word", relief="flat", bg=e.TARJETA,
+            marco_area = tk.Frame(padre, bg=e.TARJETA)
+            marco_area.pack(fill="x")
+            w = tk.Text(marco_area, height=5, wrap="word", relief="flat", bg=e.TARJETA,
                         fg=e.TEXTO, font=e.FUENTE, padx=8, pady=6, highlightthickness=1,
                         highlightbackground=e.BORDE_FUERTE, highlightcolor=e.PRIMARIO,
                         insertbackground=e.TEXTO)
-            w.pack(fill="x")
+            barra_area = ttk.Scrollbar(marco_area, orient="vertical", command=w.yview)
+            w.configure(yscrollcommand=barra_area.set)
+            w.pack(side="left", fill="x", expand=True)
+            barra_area.pack(side="right", fill="y")
             w.bind("<Control-s>", self._guardar)
+
+            contador = ttk.Label(padre, text="", style="Suave.Tarjeta.TLabel")
+            contador.pack(anchor="e", pady=(2, 0))
+
+            def ajustar(_evento=None):
+                contenido = w.get("1.0", "end-1c")
+                if campo.max_largo and len(contenido) > campo.max_largo:
+                    w.delete(f"1.0+{campo.max_largo}c", "end")     # no pasa del máximo
+                    contenido = w.get("1.0", "end-1c")
+                contador.config(text=f"{len(contenido)} / {campo.max_largo}" if campo.max_largo
+                                else f"{len(contenido)} caracteres")
+
+            w.bind("<KeyRelease>", ajustar)
+            w.bind("<<Paste>>", lambda _ev: w.after_idle(ajustar))
 
             def asignar(valor):
                 w.delete("1.0", "end")
                 w.insert("1.0", "" if valor is None else str(valor))
+                ajustar()
             return (lambda: w.get("1.0", "end-1c")), asignar, w
 
         if campo.tipo == "combo":
@@ -243,10 +286,23 @@ class CrudVista:
         else:
             w = ttk.Entry(padre)
             w.pack(fill="x")
+            limitar = bool(campo.max_largo or campo.solo_digitos)
+            if limitar:
+                def permitido(nuevo):
+                    if campo.max_largo and len(nuevo) > campo.max_largo:
+                        return False
+                    if campo.solo_digitos and nuevo and not re.fullmatch(r"[0-9]+", nuevo):
+                        return False
+                    return True
+                w.configure(validate="key", validatecommand=(w.register(permitido), "%P"))
 
             def asignar_texto(valor):
+                if limitar:
+                    w.configure(validate="none")    # al cargar un registro no se valida
                 w.delete(0, "end")
                 w.insert(0, "" if valor is None else str(valor))
+                if limitar:
+                    w.configure(validate="key")
             obtenido = w.get, asignar_texto
 
         # Enter y Ctrl+S guardan cuando el foco está en este campo.
@@ -291,7 +347,8 @@ class CrudVista:
             if not f.get("estado", True):
                 etiquetas.append("inactivo")
             self.tabla.insert("", "end", iid=_iid(f["id"]), tags=etiquetas,
-                              values=[f.get(c.clave, "") for c in self.columnas])
+                              values=[str(f.get(c.clave, "")).replace("\n", " ")
+                                      for c in self.columnas])
         if self.id_seleccionado is not None and self.tabla.exists(_iid(self.id_seleccionado)):
             self.tabla.selection_set(_iid(self.id_seleccionado))
 

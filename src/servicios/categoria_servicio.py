@@ -1,6 +1,7 @@
 """Servicio: reglas del negocio de las categorías."""
 from dominio.entidades.categoria import Categoria
 from dominio.excepciones.regla_dominio_error import ReglaDominioError
+from servicios import validaciones as v
 
 
 class CategoriaServicio:
@@ -27,14 +28,9 @@ class CategoriaServicio:
         self.categoria_repositorio.eliminar(id_categoria)
 
     def _validar(self, id_categoria, nombre, descripcion, estado):
-        nombre = (nombre or "").strip()
-        descripcion = (descripcion or "").strip() or None
-        if not nombre:
-            raise ReglaDominioError("El nombre es obligatorio.")
-        if len(nombre) > 50:
-            raise ReglaDominioError("El nombre admite máximo 50 caracteres.")
-        if descripcion is not None and len(descripcion) > 200:
-            raise ReglaDominioError("La descripción admite máximo 200 caracteres.")
+        nombre = v.texto(nombre, "El nombre", minimo=3, maximo=50)
+        descripcion = v.texto(descripcion, "La descripción", minimo=5, maximo=200,
+                              multilinea=True)
         if self.categoria_repositorio.existe_duplicada(nombre, id_categoria or 0):
             raise ReglaDominioError("Ya existe una categoría con ese nombre.")
         return Categoria(id_categoria, nombre, descripcion, bool(estado))
