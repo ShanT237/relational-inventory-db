@@ -175,6 +175,6 @@ proyecto-final-bd/
 
 - [x] Diagrama entidad-relación
 - [x] Diccionario de datos
-- [ ] Diagrama relacional de tablas normalizado
-- [ ] Explicación general de la aplicación (este documento)
+- [x] Diagrama relacional de tablas normalizado
+- [x] Explicación general de la aplicación (este documento)
 - [ ] Aplicación funcionando: ingreso, entidades, transacciones, consultas, reportes y auditoría
