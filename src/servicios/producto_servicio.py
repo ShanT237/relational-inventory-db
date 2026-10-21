@@ -1,6 +1,7 @@
 """Servicio: reglas del negocio de los productos."""
 from dominio.entidades.producto import Producto
 from dominio.excepciones.regla_dominio_error import ReglaDominioError
+from servicios import validaciones as v
 
 
 class ProductoServicio:
@@ -31,27 +32,13 @@ class ProductoServicio:
 
     def _validar(self, id_producto, codigo, nombre, id_categoria, descripcion,
                  unidad_medida, estado):
-        codigo = (codigo or "").strip()
-        nombre = (nombre or "").strip()
-        descripcion = (descripcion or "").strip() or None
-        unidad_medida = (unidad_medida or "").strip() or None
-
-        if not codigo:
-            raise ReglaDominioError("El código es obligatorio.")
-        if len(codigo) > 30:
-            raise ReglaDominioError("El código admite máximo 30 caracteres.")
-        if " " in codigo:
-            raise ReglaDominioError("El código no debe tener espacios.")
-        if not nombre:
-            raise ReglaDominioError("El nombre es obligatorio.")
-        if len(nombre) > 200:
-            raise ReglaDominioError("El nombre admite máximo 200 caracteres.")
-        if id_categoria is None:
-            raise ReglaDominioError("Selecciona la categoría del producto.")
-        if descripcion is not None and len(descripcion) > 250:
-            raise ReglaDominioError("La descripción admite máximo 250 caracteres.")
-        if unidad_medida is not None and len(unidad_medida) > 20:
-            raise ReglaDominioError("La unidad de medida admite máximo 20 caracteres.")
+        codigo = v.codigo(codigo)
+        nombre = v.texto(nombre, "El nombre", minimo=2, maximo=200)
+        v.seleccion(id_categoria, "La categoría del producto")
+        descripcion = v.texto(descripcion, "La descripción", minimo=5, maximo=250,
+                              multilinea=True)
+        unidad_medida = v.solo_letras(unidad_medida, "La unidad de medida",
+                                      minimo=1, maximo=20).lower()
         if self.producto_repositorio.existe_codigo(codigo, id_producto or 0):
             raise ReglaDominioError("Ya existe un producto con ese código.")
         return Producto(id_producto, codigo, nombre, int(id_categoria), descripcion,
