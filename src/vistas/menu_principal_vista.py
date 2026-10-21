@@ -10,6 +10,7 @@ from tkinter import messagebox, ttk
 from vistas import estilos as e
 from vistas.categorias_vista import CategoriasVista
 from vistas.ciudades_vista import CiudadesVista
+from vistas.productos_proveedor_vista import ProductosProveedorVista
 from vistas.productos_vista import ProductosVista
 from vistas.proveedores_vista import ProveedoresVista
 
@@ -18,12 +19,13 @@ class MenuPrincipalVista:
 
     def __init__(self, autenticacion_controlador, ciudad_controlador,
                  categoria_controlador, proveedor_controlador, producto_controlador,
-                 sesion):
+                 proveedor_producto_controlador, sesion):
         self.controlador = autenticacion_controlador
         self.ciudad_controlador = ciudad_controlador
         self.categoria_controlador = categoria_controlador
         self.proveedor_controlador = proveedor_controlador
         self.producto_controlador = producto_controlador
+        self.proveedor_producto_controlador = proveedor_producto_controlador
         self.sesion = sesion
         self.volver_al_login = False
 
@@ -114,7 +116,11 @@ class MenuPrincipalVista:
                 "Relaciona proveedores con los productos que suministran.", [
                     ("Productos por proveedor",
                      "Asigna productos a cada proveedor con precio y días de entrega.",
-                     pendiente("Productos por proveedor"))])
+                     crud("Transacciones", "Productos por proveedor",
+                          lambda: ProductosProveedorVista(
+                              self.proveedor_producto_controlador,
+                              self.proveedor_controlador,
+                              self.producto_controlador)))])
         consultas = [
             ("Proveedores con ciudad y productos", "Cada proveedor con su ciudad y lo que suministra."),
             ("Productos con categoría y proveedores", "Productos, su categoría y quién los ofrece, con precio y entrega."),

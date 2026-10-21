@@ -4,6 +4,7 @@ Cada módulo (ciudades, categorías, proveedores, productos) solo declara sus
 columnas, sus campos y qué hacer al cargar/crear/modificar/eliminar; el diseño y
 el comportamiento (búsqueda, filtro, orden, formulario) viven aquí.
 La pantalla se dibuja DENTRO de un contenedor (no abre ventanas nuevas)."""
+import re
 import tkinter as tk
 from dataclasses import dataclass
 from tkinter import messagebox, ttk
@@ -19,6 +20,8 @@ class Columna:
     titulo: str
     ancho: int = 120
     centrado: bool = False
+    derecha: bool = False                # alinear a la derecha (precios, cantidades)
+    orden_por: Optional[str] = None      # clave del dict por la que se ordena (si difiere)
 
 
 @dataclass
@@ -28,11 +31,26 @@ class Campo:
     tipo: str = "texto"            # texto | area | combo | combo_texto | check
     opciones: Optional[Callable] = None   # combo: [(id, texto)]; combo_texto: [texto]
     obligatorio: bool = False
+    bloqueado_al_editar: bool = False     # se elige al crear y luego no se puede cambiar
+
+
+_NUMERO = re.compile(r"^-?\d+(\.\d+)?$")
 
 
 def _clave_orden(valor):
+    """Números primero (ordenados como número), luego texto (sin distinguir mayúsculas)."""
     texto = "" if valor is None else str(valor)
-    return (0, int(texto), "") if texto.isdigit() else (1, 0, texto.lower())
+    if _NUMERO.match(texto):
+        return (0, float(texto), "")
+    return (1, 0.0, texto.lower())
+
+
+def _iid(id_fila):
+    """Identificador de fila en la tabla. El id puede ser un número o una tupla
+    (llave compuesta, p. ej. proveedor + producto)."""
+    if isinstance(id_fila, tuple):
+        return "-".join(str(x) for x in id_fila)
+    return str(id_fila)
 
 
 class CrudVista:
@@ -58,7 +76,7 @@ class CrudVista:
 
         self.id_seleccionado = None   # None = se está creando un registro nuevo
         self.filas = []
-        self.filas_por_id = {}
+        self.filas_por_iid = {}
         self.orden = None             # (clave de columna, descendente)
         self.campos_widgets = {}      # clave -> (obtener, asignar, widget)
 
@@ -109,7 +127,7 @@ class CrudVista:
             self.tabla.heading(c.clave, text=c.titulo,
                                command=lambda k=c.clave: self._ordenar(k))
             self.tabla.column(c.clave, width=c.ancho, minwidth=50,
-                              anchor="center" if c.centrado else "w")
+                              anchor="center" if c.centrado else ("e" if c.derecha else "w"))
         scroll = ttk.Scrollbar(marco, orient="vertical", command=self.tabla.yview)
         self.tabla.configure(yscrollcommand=scroll.set)
         self.tabla.pack(side="left", fill="both", expand=True)
@@ -244,7 +262,7 @@ class CrudVista:
             self.filas = []
             messagebox.showerror("Error", f"No se pudieron cargar los datos:\n{error}",
                                  parent=self.ventana)
-        self.filas_por_id = {f["id"]: f for f in self.filas}
+        self.filas_por_iid = {_iid(f["id"]): f for f in self.filas}
         self._pintar()
 
     def _pintar(self):
@@ -263,17 +281,19 @@ class CrudVista:
             visibles.append(f)
         if self.orden:
             clave, descendente = self.orden
-            visibles.sort(key=lambda f: _clave_orden(f.get(clave)), reverse=descendente)
+            columna = next(c for c in self.columnas if c.clave == clave)
+            clave_valor = columna.orden_por or clave
+            visibles.sort(key=lambda f: _clave_orden(f.get(clave_valor)), reverse=descendente)
 
         self.tabla.delete(*self.tabla.get_children())
         for i, f in enumerate(visibles):
             etiquetas = ["par" if i % 2 == 0 else "impar"]
             if not f.get("estado", True):
                 etiquetas.append("inactivo")
-            self.tabla.insert("", "end", iid=str(f["id"]), tags=etiquetas,
+            self.tabla.insert("", "end", iid=_iid(f["id"]), tags=etiquetas,
                               values=[f.get(c.clave, "") for c in self.columnas])
-        if self.id_seleccionado is not None and self.tabla.exists(str(self.id_seleccionado)):
-            self.tabla.selection_set(str(self.id_seleccionado))
+        if self.id_seleccionado is not None and self.tabla.exists(_iid(self.id_seleccionado)):
+            self.tabla.selection_set(_iid(self.id_seleccionado))
 
         for c in self.columnas:
             flecha = ""
@@ -288,6 +308,13 @@ class CrudVista:
         self._pintar()
 
     # ----------------------------------------------------------------- acciones
+    @staticmethod
+    def _habilitar(widget, habilitado):
+        try:
+            widget.state(["!disabled"] if habilitado else ["disabled"])   # widgets ttk
+        except AttributeError:
+            widget.configure(state="normal" if habilitado else "disabled")
+
     def _mensaje(self, texto, error=False):
         self.lbl_mensaje.config(
             text=texto, style="Error.Tarjeta.TLabel" if error else "Exito.Tarjeta.TLabel")
@@ -301,7 +328,9 @@ class CrudVista:
     def _nuevo(self, limpiar_mensaje=True):
         self.id_seleccionado = None
         for campo in self.campos:
-            _, asignar, _ = self.campos_widgets[campo.clave]
+            _, asignar, widget = self.campos_widgets[campo.clave]
+            if campo.bloqueado_al_editar:
+                self._habilitar(widget, True)
             asignar(True if campo.tipo == "check" else "")
         self.tabla.selection_remove(self.tabla.selection())
         self.lbl_modo.config(text=self.texto_nuevo)
@@ -314,15 +343,20 @@ class CrudVista:
         seleccion = self.tabla.selection()
         if not seleccion:
             return
-        id_fila = int(seleccion[0])
-        if id_fila == self.id_seleccionado:
-            return
-        fila = self.filas_por_id.get(id_fila)
+        fila = self.filas_por_iid.get(seleccion[0])
         if fila is None:
+            return
+        id_fila = fila["id"]
+        if id_fila == self.id_seleccionado:
             return
         self.id_seleccionado = id_fila
         for campo in self.campos:
-            self.campos_widgets[campo.clave][1](fila.get(campo.clave))
+            _, asignar, widget = self.campos_widgets[campo.clave]
+            if campo.bloqueado_al_editar:
+                self._habilitar(widget, True)      # se habilita solo para poder asignar
+            asignar(fila.get(campo.clave))
+            if campo.bloqueado_al_editar:
+                self._habilitar(widget, False)
         self.lbl_modo.config(text=self.texto_editar)
         self.btn_eliminar.state(["!disabled"])
         self.lbl_mensaje.config(text="")
@@ -351,7 +385,8 @@ class CrudVista:
         if self.id_seleccionado is None:
             self._mensaje("Selecciona un registro de la tabla.", error=True)
             return
-        nombre = self.filas_por_id.get(self.id_seleccionado, {}).get(self.clave_nombre, "")
+        nombre = self.filas_por_iid.get(_iid(self.id_seleccionado), {}).get(
+            self.clave_nombre, "")
         if not messagebox.askyesno(
                 "Eliminar", f"¿Eliminar «{nombre}»?\nEsta acción no se puede deshacer.",
                 parent=self.ventana):
