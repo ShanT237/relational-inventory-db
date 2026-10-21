@@ -1,0 +1,3 @@
+﻿docker-compose.yml
+src/configuracion/configuracion_local.py
+__pycache__/
