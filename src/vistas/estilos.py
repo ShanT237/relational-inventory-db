@@ -90,7 +90,8 @@ def aplicar_tema(raiz):
                lightcolor=[("focus", PRIMARIO)], darkcolor=[("focus", PRIMARIO)])
     estilo.configure("TCombobox", background=TARJETA, arrowcolor=SUAVE, **campo)
     estilo.map("TCombobox",
-               fieldbackground=[("readonly", TARJETA)],
+               fieldbackground=[("disabled", FILA_IMPAR), ("readonly", TARJETA)],
+               foreground=[("disabled", SUAVE)],
                selectbackground=[("readonly", TARJETA)],
                selectforeground=[("readonly", TEXTO)],
                bordercolor=[("focus", PRIMARIO)],
