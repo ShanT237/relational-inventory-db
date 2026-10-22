@@ -154,34 +154,14 @@ proyecto-final-bd/
 └── README.md
 ```
 
-## 10. Instalación y ejecución
 
-1. Instalar **Python 3** y **SQL Server**. Instalar también el **ODBC Driver 17 o 18 for SQL Server**.
-2. Ejecutar en SQL Server, en orden, los scripts `sql/01_crear_tablas.sql` y `sql/02_datos_iniciales.sql`. El segundo crea los tres roles y el usuario Administrador.
-3. Instalar las dependencias:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Escribir los datos de conexión (servidor, base de datos, usuario y contraseña) en `src/config.py`.
-5. Iniciar la aplicación:
-
-   ```bash
-   python src/main.py
-   ```
-
-## 11. Entregables
+## 10. Entregables
 
 - [x] Diagrama entidad-relación
 - [x] Diccionario de datos
 - [x] Diagrama relacional de tablas normalizado
 - [x] Explicación general de la aplicación (este documento)
 - [ ] Aplicación funcionando: ingreso, entidades, transacciones, consultas, reportes y auditoría
-
-
-
-
 
 
 
