@@ -60,7 +60,7 @@ class CrudVista:
 
     def __init__(self, contenedor, subtitulo, columnas, campos, cargar, crear,
                  modificar, eliminar, texto_nuevo, texto_editar,
-                 tiene_estado=True, clave_nombre="nombre"):
+                 tiene_estado=True, clave_nombre="nombre", permitir_eliminar=True):
         """cargar() -> lista de dicts con la clave 'id' (y 'estado' si tiene_estado).
         crear(valores) / modificar(id, valores) / eliminar(id) llaman al controlador."""
         self.contenedor = contenedor
@@ -76,6 +76,7 @@ class CrudVista:
         self.texto_editar = texto_editar
         self.tiene_estado = tiene_estado
         self.clave_nombre = clave_nombre
+        self.permitir_eliminar = permitir_eliminar
 
         self.id_seleccionado = None   # None = se está creando un registro nuevo
         self.filas = []
@@ -175,7 +176,8 @@ class CrudVista:
             row=0, column=0, sticky="ew", padx=(0, 4))
         self.btn_eliminar = ttk.Button(fila, text="Eliminar", style="Peligro.TButton",
                                        command=self._eliminar)
-        self.btn_eliminar.grid(row=0, column=1, sticky="ew", padx=(4, 0))
+        if self.permitir_eliminar:
+            self.btn_eliminar.grid(row=0, column=1, sticky="ew", padx=(4, 0))
 
         self.btn_guardar = ttk.Button(contenido, text="Guardar", style="Primario.TButton",
                                       command=self._guardar)
@@ -284,7 +286,7 @@ class CrudVista:
             obtenido = variable.get, (lambda valor: variable.set(bool(valor)))
 
         else:
-            w = ttk.Entry(padre)
+            w = ttk.Entry(padre, show="*" if campo.tipo == "password" else "")
             w.pack(fill="x")
             limitar = bool(campo.max_largo or campo.solo_digitos)
             if limitar:
