@@ -2,6 +2,7 @@
 from dominio.entidades.producto import Producto
 from dominio.excepciones.regla_dominio_error import ReglaDominioError
 from servicios import validaciones as v
+from servicios.permisos import requiere_modificar
 
 
 class ProductoServicio:
@@ -9,21 +10,25 @@ class ProductoServicio:
     def __init__(self, producto_repositorio):
         self.producto_repositorio = producto_repositorio
 
-    def listar(self):
+    def listar(self, sesion):
+        requiere_modificar(sesion)
         return self.producto_repositorio.listar()
 
-    def crear(self, codigo, nombre, id_categoria, descripcion, unidad_medida, estado):
+    def crear(self, sesion, codigo, nombre, id_categoria, descripcion, unidad_medida, estado):
+        requiere_modificar(sesion)
         producto = self._validar(None, codigo, nombre, id_categoria, descripcion,
                                  unidad_medida, estado)
         self.producto_repositorio.insertar(producto)
 
-    def modificar(self, id_producto, codigo, nombre, id_categoria, descripcion,
+    def modificar(self, sesion, id_producto, codigo, nombre, id_categoria, descripcion,
                   unidad_medida, estado):
+        requiere_modificar(sesion)
         producto = self._validar(id_producto, codigo, nombre, id_categoria,
                                  descripcion, unidad_medida, estado)
         self.producto_repositorio.actualizar(producto)
 
-    def eliminar(self, id_producto):
+    def eliminar(self, sesion, id_producto):
+        requiere_modificar(sesion)
         if self.producto_repositorio.tiene_proveedores(id_producto):
             raise ReglaDominioError(
                 "No se puede eliminar: hay proveedores que ofrecen este producto. "
