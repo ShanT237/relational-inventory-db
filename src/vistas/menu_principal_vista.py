@@ -8,18 +8,22 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from vistas import estilos as e
+from vistas.bitacora_vista import BitacoraVista
 from vistas.categorias_vista import CategoriasVista
 from vistas.ciudades_vista import CiudadesVista
+from vistas.consultas_vista import ConsultasVista
 from vistas.productos_proveedor_vista import ProductosProveedorVista
 from vistas.productos_vista import ProductosVista
 from vistas.proveedores_vista import ProveedoresVista
+from vistas.usuarios_vista import UsuariosVista
 
 
 class MenuPrincipalVista:
 
     def __init__(self, autenticacion_controlador, ciudad_controlador,
                  categoria_controlador, proveedor_controlador, producto_controlador,
-                 proveedor_producto_controlador, sesion):
+                 proveedor_producto_controlador, sesion, consulta_controlador,
+                 usuario_controlador, bitacora_controlador):
         self.controlador = autenticacion_controlador
         self.ciudad_controlador = ciudad_controlador
         self.categoria_controlador = categoria_controlador
@@ -27,6 +31,9 @@ class MenuPrincipalVista:
         self.producto_controlador = producto_controlador
         self.proveedor_producto_controlador = proveedor_producto_controlador
         self.sesion = sesion
+        self.consulta_controlador = consulta_controlador
+        self.usuario_controlador = usuario_controlador
+        self.bitacora_controlador = bitacora_controlador
         self.volver_al_login = False
 
     def mostrar(self):
@@ -122,14 +129,25 @@ class MenuPrincipalVista:
                               self.proveedor_controlador,
                               self.producto_controlador)))])
         consultas = [
-            ("Proveedores con ciudad y productos", "Cada proveedor con su ciudad y lo que suministra."),
-            ("Productos con categoría y proveedores", "Productos, su categoría y quién los ofrece, con precio y entrega."),
-            ("Bitácora de ingresos con usuario y rol", "Quién ingresó al sistema y con qué rol."),
-            ("Proveedores con precio sobre el promedio", "Proveedores con productos más caros que el promedio."),
-            ("Productos sin proveedor", "Productos que aún no tienen proveedor asignado."),
+            ("proveedores_ciudad_productos", "Proveedores con ciudad y productos",
+             "Cada proveedor con su ciudad y lo que suministra."),
+            ("productos_categoria_proveedores", "Productos con categoría y proveedores",
+             "Productos, su categoría y quién los ofrece, con precio y entrega."),
+            ("bitacora_usuarios_roles", "Bitácora de ingresos con usuario y rol",
+             "Quién ingresó al sistema y con qué rol."),
+            ("proveedores_precio_sobre_promedio", "Proveedores con precio sobre el promedio",
+             "Proveedores con productos más caros que el promedio."),
+            ("productos_sin_proveedor", "Productos sin proveedor",
+             "Productos que aún no tienen proveedor asignado."),
         ]
+        def abrir_consulta(identificador, titulo):
+            return lambda: abrir(
+                ["Consultas", titulo],
+                lambda z: ConsultasVista(
+                    self.consulta_controlador, identificador, titulo).construir(z))
+
         secciones["Consultas"] = ("Consulta la información registrada.",
-                                  [(t, d, pendiente(t)) for t, d in consultas])
+                                  [(t, d, abrir_consulta(i, t)) for i, t, d in consultas])
         if sesion.puede_modificar():
             reportes = [
                 ("Productos de un proveedor", "PDF filtrado por proveedor."),
@@ -143,9 +161,11 @@ class MenuPrincipalVista:
         if sesion.es_administrador():
             secciones["Auditoría"] = ("Control de usuarios y accesos (solo Administrador).", [
                 ("Gestión de usuarios", "Crea y administra los usuarios del sistema.",
-                 pendiente("Gestión de usuarios")),
+                 crud("Auditoría", "Gestión de usuarios",
+                      lambda: UsuariosVista(self.usuario_controlador))),
                 ("Bitácora de entrada y salida", "Historial de ingresos y salidas.",
-                 pendiente("Bitácora")),
+                 crud("Auditoría", "Bitácora de entrada y salida",
+                      lambda: BitacoraVista(self.bitacora_controlador))),
             ])
 
         # ------------------------------------------------------------ barra lateral

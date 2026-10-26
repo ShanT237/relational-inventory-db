@@ -2,6 +2,7 @@
 from dominio.entidades.proveedor import Proveedor
 from dominio.excepciones.regla_dominio_error import ReglaDominioError
 from servicios import validaciones as v
+from servicios.permisos import requiere_modificar
 
 
 class ProveedorServicio:
@@ -9,21 +10,25 @@ class ProveedorServicio:
     def __init__(self, proveedor_repositorio):
         self.proveedor_repositorio = proveedor_repositorio
 
-    def listar(self):
+    def listar(self, sesion):
+        requiere_modificar(sesion)
         return self.proveedor_repositorio.listar()
 
-    def crear(self, nit, nombre, id_ciudad, direccion, telefono, correo, estado):
+    def crear(self, sesion, nit, nombre, id_ciudad, direccion, telefono, correo, estado):
+        requiere_modificar(sesion)
         proveedor = self._validar(None, nit, nombre, id_ciudad, direccion,
                                   telefono, correo, estado)
         self.proveedor_repositorio.insertar(proveedor)
 
-    def modificar(self, id_proveedor, nit, nombre, id_ciudad, direccion,
+    def modificar(self, sesion, id_proveedor, nit, nombre, id_ciudad, direccion,
                   telefono, correo, estado):
+        requiere_modificar(sesion)
         proveedor = self._validar(id_proveedor, nit, nombre, id_ciudad, direccion,
                                   telefono, correo, estado)
         self.proveedor_repositorio.actualizar(proveedor)
 
-    def eliminar(self, id_proveedor):
+    def eliminar(self, sesion, id_proveedor):
+        requiere_modificar(sesion)
         if self.proveedor_repositorio.tiene_productos(id_proveedor):
             raise ReglaDominioError(
                 "No se puede eliminar: el proveedor tiene productos asignados. "

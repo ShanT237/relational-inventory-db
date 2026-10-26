@@ -2,6 +2,7 @@
 from dominio.entidades.categoria import Categoria
 from dominio.excepciones.regla_dominio_error import ReglaDominioError
 from servicios import validaciones as v
+from servicios.permisos import requiere_modificar
 
 
 class CategoriaServicio:
@@ -9,18 +10,22 @@ class CategoriaServicio:
     def __init__(self, categoria_repositorio):
         self.categoria_repositorio = categoria_repositorio
 
-    def listar(self):
+    def listar(self, sesion):
+        requiere_modificar(sesion)
         return self.categoria_repositorio.listar()
 
-    def crear(self, nombre, descripcion, estado):
+    def crear(self, sesion, nombre, descripcion, estado):
+        requiere_modificar(sesion)
         categoria = self._validar(None, nombre, descripcion, estado)
         self.categoria_repositorio.insertar(categoria)
 
-    def modificar(self, id_categoria, nombre, descripcion, estado):
+    def modificar(self, sesion, id_categoria, nombre, descripcion, estado):
+        requiere_modificar(sesion)
         categoria = self._validar(id_categoria, nombre, descripcion, estado)
         self.categoria_repositorio.actualizar(categoria)
 
-    def eliminar(self, id_categoria):
+    def eliminar(self, sesion, id_categoria):
+        requiere_modificar(sesion)
         if self.categoria_repositorio.tiene_productos(id_categoria):
             raise ReglaDominioError(
                 "No se puede eliminar: hay productos en esta categoría. "

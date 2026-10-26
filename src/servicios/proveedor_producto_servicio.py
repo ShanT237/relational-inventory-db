@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from dominio.entidades.proveedor_producto import ProveedorProducto
 from dominio.excepciones.regla_dominio_error import ReglaDominioError
+from servicios.permisos import requiere_modificar
 
 _PRECIO = re.compile(r"^\d{1,10}([.,]\d{1,2})?$")   # DECIMAL(12,2), sin separador de miles
 _ENTERO = re.compile(r"^\d{1,5}$")
@@ -15,10 +16,12 @@ class ProveedorProductoServicio:
     def __init__(self, proveedor_producto_repositorio):
         self.repositorio = proveedor_producto_repositorio
 
-    def listar(self):
+    def listar(self, sesion):
+        requiere_modificar(sesion)
         return self.repositorio.listar()
 
-    def crear(self, id_proveedor, id_producto, precio, dias_entrega, estado):
+    def crear(self, sesion, id_proveedor, id_producto, precio, dias_entrega, estado):
+        requiere_modificar(sesion)
         if id_proveedor is None:
             raise ReglaDominioError("Selecciona el proveedor.")
         if id_producto is None:
@@ -31,12 +34,14 @@ class ProveedorProductoServicio:
         self._validar_activos(oferta)
         self.repositorio.insertar(oferta)
 
-    def modificar(self, id_proveedor, id_producto, precio, dias_entrega, estado):
+    def modificar(self, sesion, id_proveedor, id_producto, precio, dias_entrega, estado):
+        requiere_modificar(sesion)
         oferta = self._armar(id_proveedor, id_producto, precio, dias_entrega, estado)
         self._validar_activos(oferta)
         self.repositorio.actualizar(oferta)
 
-    def eliminar(self, id_proveedor, id_producto):
+    def eliminar(self, sesion, id_proveedor, id_producto):
+        requiere_modificar(sesion)
         self.repositorio.eliminar(id_proveedor, id_producto)
 
     # ------------------------------------------------------------------ privados

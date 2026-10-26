@@ -2,6 +2,7 @@
 from dominio.entidades.ciudad import Ciudad
 from dominio.excepciones.regla_dominio_error import ReglaDominioError
 from servicios import validaciones as v
+from servicios.permisos import requiere_modificar
 
 
 class CiudadServicio:
@@ -9,18 +10,22 @@ class CiudadServicio:
     def __init__(self, ciudad_repositorio):
         self.ciudad_repositorio = ciudad_repositorio
 
-    def listar(self):
+    def listar(self, sesion):
+        requiere_modificar(sesion)
         return self.ciudad_repositorio.listar()
 
-    def crear(self, nombre, departamento):
+    def crear(self, sesion, nombre, departamento):
+        requiere_modificar(sesion)
         ciudad = self._validar(None, nombre, departamento)
         self.ciudad_repositorio.insertar(ciudad)
 
-    def modificar(self, id_ciudad, nombre, departamento):
+    def modificar(self, sesion, id_ciudad, nombre, departamento):
+        requiere_modificar(sesion)
         ciudad = self._validar(id_ciudad, nombre, departamento)
         self.ciudad_repositorio.actualizar(ciudad)
 
-    def eliminar(self, id_ciudad):
+    def eliminar(self, sesion, id_ciudad):
+        requiere_modificar(sesion)
         if self.ciudad_repositorio.tiene_proveedores(id_ciudad):
             raise ReglaDominioError(
                 "No se puede eliminar: hay proveedores ubicados en esta ciudad.")
