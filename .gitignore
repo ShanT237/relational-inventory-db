@@ -1,2 +1,15 @@
-﻿src/configuracion/configuracion_local.py
+# Secretos: nunca se suben a Git
+.env
+src/configuracion/configuracion_local.py
+
+# Python
 __pycache__/
+*.pyc
+venv/
+.venv/
+
+# IDE
+.idea/
+
+# PDF generados (la carpeta reportes/ sí se versiona, vacía, con .gitkeep)
+reportes/*.pdf
