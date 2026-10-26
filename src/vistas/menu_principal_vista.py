@@ -15,6 +15,7 @@ from vistas.consultas_vista import ConsultasVista
 from vistas.productos_proveedor_vista import ProductosProveedorVista
 from vistas.productos_vista import ProductosVista
 from vistas.proveedores_vista import ProveedoresVista
+from vistas.reportes_vista import ReportesVista, definiciones
 from vistas.usuarios_vista import UsuariosVista
 
 
@@ -23,7 +24,7 @@ class MenuPrincipalVista:
     def __init__(self, autenticacion_controlador, ciudad_controlador,
                  categoria_controlador, proveedor_controlador, producto_controlador,
                  proveedor_producto_controlador, sesion, consulta_controlador,
-                 usuario_controlador, bitacora_controlador):
+                 usuario_controlador, bitacora_controlador, reporte_controlador):
         self.controlador = autenticacion_controlador
         self.ciudad_controlador = ciudad_controlador
         self.categoria_controlador = categoria_controlador
@@ -34,6 +35,7 @@ class MenuPrincipalVista:
         self.consulta_controlador = consulta_controlador
         self.usuario_controlador = usuario_controlador
         self.bitacora_controlador = bitacora_controlador
+        self.reporte_controlador = reporte_controlador
         self.volver_al_login = False
 
     def mostrar(self):
@@ -45,10 +47,6 @@ class MenuPrincipalVista:
         e.aplicar_tema(raiz)
         raiz.minsize(1100, 640)
         e.centrar(raiz, 1280, 760)
-
-        def pendiente(nombre):
-            return lambda: messagebox.showinfo(
-                "En construcción", f"«{nombre}» aún no está implementado.", parent=raiz)
 
         def terminar(volver):
             self.volver_al_login = volver
@@ -149,15 +147,17 @@ class MenuPrincipalVista:
         secciones["Consultas"] = ("Consulta la información registrada.",
                                   [(t, d, abrir_consulta(i, t)) for i, t, d in consultas])
         if sesion.puede_modificar():
-            reportes = [
-                ("Productos de un proveedor", "PDF filtrado por proveedor."),
-                ("Proveedores por ciudad", "PDF filtrado por ciudad o departamento."),
-                ("Proveedores de un producto", "PDF con proveedores y precios de un producto."),
-                ("Productos de una categoría", "PDF con los productos de una categoría."),
-                ("Cantidad de productos por categoría", "PDF con totales, filtrado por estado."),
-            ]
+            def abrir_reporte(definicion):
+                return lambda: abrir(
+                    ["Reportes", definicion.titulo],
+                    lambda z: ReportesVista(
+                        self.reporte_controlador, definicion).construir(z))
+
+            reportes = definiciones(self.proveedor_controlador, self.ciudad_controlador,
+                                    self.producto_controlador, self.categoria_controlador)
             secciones["Reportes"] = ("Genera reportes en PDF con filtros.",
-                                     [(t, d, pendiente(t)) for t, d in reportes])
+                                     [(d.titulo, d.descripcion, abrir_reporte(d))
+                                      for d in reportes])
         if sesion.es_administrador():
             secciones["Auditoría"] = ("Control de usuarios y accesos (solo Administrador).", [
                 ("Gestión de usuarios", "Crea y administra los usuarios del sistema.",

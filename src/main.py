@@ -8,6 +8,7 @@ from controladores.consulta_controlador import ConsultaControlador
 from controladores.producto_controlador import ProductoControlador
 from controladores.proveedor_producto_controlador import ProveedorProductoControlador
 from controladores.proveedor_controlador import ProveedorControlador
+from controladores.reporte_controlador import ReporteControlador
 from controladores.usuario_controlador import UsuarioControlador
 from repositorios.bitacora_repositorio import BitacoraRepositorio
 from repositorios.categoria_repositorio import CategoriaRepositorio
@@ -16,15 +17,18 @@ from repositorios.consulta_repositorio import ConsultaRepositorio
 from repositorios.producto_repositorio import ProductoRepositorio
 from repositorios.proveedor_producto_repositorio import ProveedorProductoRepositorio
 from repositorios.proveedor_repositorio import ProveedorRepositorio
+from repositorios.reporte_repositorio import ReporteRepositorio
 from repositorios.usuario_repositorio import UsuarioRepositorio
 from servicios.autenticacion_servicio import AutenticacionServicio
 from servicios.bitacora_servicio import BitacoraServicio
 from servicios.categoria_servicio import CategoriaServicio
 from servicios.ciudad_servicio import CiudadServicio
 from servicios.consulta_servicio import ConsultaServicio
+from servicios.generador_pdf import generar_pdf
 from servicios.producto_servicio import ProductoServicio
 from servicios.proveedor_producto_servicio import ProveedorProductoServicio
 from servicios.proveedor_servicio import ProveedorServicio
+from servicios.reporte_servicio import ReporteServicio
 from servicios.seguridad_servicio import SeguridadServicio
 from servicios.usuario_servicio import UsuarioServicio
 from vistas.login_vista import LoginVista
@@ -50,6 +54,7 @@ def main():
     proveedor_servicio = ProveedorServicio(proveedor_repositorio)
     producto_servicio = ProductoServicio(producto_repositorio)
     proveedor_producto_servicio = ProveedorProductoServicio(proveedor_producto_repositorio)
+    reporte_servicio = ReporteServicio(ReporteRepositorio(), generar_pdf)
 
     # Controladores
     autenticacion_controlador = AutenticacionControlador(autenticacion_servicio)
@@ -71,12 +76,13 @@ def main():
         consulta_controlador = ConsultaControlador(consulta_servicio, sesion)
         usuario_controlador = UsuarioControlador(usuario_servicio, sesion)
         bitacora_controlador = BitacoraControlador(bitacora_servicio, sesion)
+        reporte_controlador = ReporteControlador(reporte_servicio, sesion)
         menu = MenuPrincipalVista(autenticacion_controlador, ciudad_controlador,
                                   categoria_controlador, proveedor_controlador,
                                   producto_controlador,
                                   proveedor_producto_controlador, sesion,
                                   consulta_controlador, usuario_controlador,
-                                  bitacora_controlador)
+                                  bitacora_controlador, reporte_controlador)
         if not menu.mostrar():
             break                               # False = salir de la aplicación
 
