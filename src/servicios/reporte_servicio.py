@@ -3,6 +3,8 @@ from dominio.entidades.reporte import Reporte
 from dominio.excepciones.regla_dominio_error import ReglaDominioError
 from servicios import validaciones as v
 from servicios.permisos import requiere_modificar
+import tempfile
+from pathlib import Path
 
 # Estados que ofrece el filtro del reporte "Cantidad de productos por categoría".
 _ESTADOS = {"todos": (None, "Todos"), "activos": (True, "Solo activos"),
@@ -38,6 +40,19 @@ class ReporteServicio:
     def generar(self, sesion, clave, filtros):
         """Valida los filtros, consulta los datos y crea el PDF. Devuelve la ruta."""
         reporte = self.construir(sesion, clave, filtros)
+        usuario = f"{sesion.nombre_completo} ({sesion.nombre_usuario})"
+        return self.generador_pdf(reporte, usuario)
+
+    def previsualizar(self, sesion, clave, filtros):
+        """Crea el PDF en una carpeta temporal (para la vista previa). Devuelve su ruta."""
+        reporte = self.construir(sesion, clave, filtros)
+        usuario = f"{sesion.nombre_completo} ({sesion.nombre_usuario})"
+        carpeta = Path(tempfile.gettempdir()) / "proveedores_vista_previa"
+        return self.generador_pdf(reporte, usuario, carpeta=carpeta)
+
+    def descargar(self, sesion, reporte):
+        """Crea el PDF de un reporte ya armado. Devuelve la ruta del archivo."""
+        requiere_modificar(sesion)
         usuario = f"{sesion.nombre_completo} ({sesion.nombre_usuario})"
         return self.generador_pdf(reporte, usuario)
 
