@@ -4,7 +4,8 @@ services:
     container_name: bd-proyecto
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "TrioPerras2026"
+      # La clave sale del archivo .env (ver .env.example). Si falta, Docker no arranca.
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Falta MSSQL_SA_PASSWORD en el archivo .env}"
     ports:
       - "127.0.0.1:1433:1433"
     volumes:

@@ -2,7 +2,7 @@
 
 Proyecto final de **Bases de Datos I** — Programa de Ingeniería de Sistemas y Computación, Universidad del Quindío (2026-II).
 
-**Integrantes:** _por completar_
+**Integrantes:** Nombre Apellido, Nombre Apellido, Nombre Apellido
 
 ## 1. Descripción
 
@@ -37,11 +37,13 @@ Tkinter, `pyodbc` y `reportlab` son librerías, no frameworks.
 
 | Tipo de usuario | Cantidad | Qué puede hacer |
 |-----------------|----------|-----------------|
-| **Administrador** | Solo 1 | Todo lo anterior, crear usuarios y ver la bitácora |
-| **Tradicional** | Varios | CRUD de los datos (crear, consultar, modificar, eliminar) y consultas |
+| **Administrador** | Solo 1 | Todo lo del Tradicional, más crear y modificar usuarios y ver la bitácora |
+| **Tradicional** | Varios | CRUD de los datos (crear, consultar, modificar, eliminar), consultas y reportes |
 | **Esporádico** | Varios | Solo consultas |
 
 Solo el Administrador puede crear usuarios nuevos. Las contraseñas se guardan cifradas.
+
+> **Decisión sobre los reportes:** por ahora el Esporádico **no** genera reportes (el enunciado le deja solo consultas). Si el equipo decide permitírselo, hay que cambiar `requiere_modificar` por `requiere_sesion` en `ReporteServicio.construir` y mostrar la sección Reportes a ese rol en `menu_principal_vista.py`.
 
 ## 5. Módulos
 
@@ -62,6 +64,8 @@ La base de datos tiene 9 tablas: `ciudad`, `categoria`, `tipo_documento`, `rol`,
 
 - Diagrama entidad-relación: `docs/diagrama-er.drawio`
 - Diccionario de datos: [`diccionario-de-datos.md`](diccionario-de-datos.md)
+- Scripts SQL: [`sql/`](sql/) (`01_crear_tablas.sql`, `02_datos_iniciales.sql` y `03_indice_administrador_unico.sql`)
+- Documento final (explicación, diagramas y diccionario): [`docs/documento-final.md`](docs/documento-final.md)
 
 La relación muchos a muchos entre proveedor y producto se resuelve con la tabla `proveedor_producto`.
 
@@ -108,7 +112,7 @@ WHERE NOT EXISTS (
 
 ## 8. Reportes
 
-Todos se generan en PDF y el usuario elige los filtros antes de generarlos.
+Todos se generan en PDF y el usuario elige los filtros en listas desplegables antes de generarlos. El PDF se guarda en la carpeta `reportes/` y se abre automáticamente. Lleva encabezado, título, filtros aplicados, tabla, fecha, hora, usuario y número de página.
 
 **Productos y proveedores (3 reportes)**
 
@@ -123,44 +127,46 @@ Todos se generan en PDF y el usuario elige los filtros antes de generarlos.
 | Reporte | Filtro del usuario |
 |---------|--------------------|
 | Productos de una categoría | Categoría |
-| Cantidad de productos por categoría | Estado (activo o inactivo) |
+| Cantidad de productos por categoría | Estado (todos, activos o inactivos) |
 
 ## 9. Arquitectura
 
 La aplicación se divide en tres capas:
 
-- **Presentación:** ventanas de Tkinter. No contiene consultas SQL.
-- **Lógica:** reglas del negocio, como validar permisos y el Administrador único.
-- **Datos:** acceso a SQL Server con `pyodbc`. Todas las consultas usan parámetros para evitar inyección SQL.
+- **Presentación:** ventanas de Tkinter (`vistas/`) y controladores (`controladores/`). No contiene consultas SQL.
+- **Lógica:** reglas del negocio (`servicios/`), como validar permisos y el Administrador único, y la generación de PDF.
+- **Datos:** acceso a SQL Server con `pyodbc` (`repositorios/`). Todas las consultas usan parámetros para evitar inyección SQL.
 
 ```text
 proyecto-final-bd/
 ├── src/
-│   ├── main.py
-│   ├── config.py
-│   ├── datos/            # conexión y consultas a SQL Server
-│   ├── logica/           # autenticación, permisos y reglas del negocio
-│   └── presentacion/     # ventanas: login, entidades, transacciones,
-│                         # consultas, reportes y auditoría
-├── sql/
-│   ├── 01_crear_tablas.sql
-│   ├── 02_datos_iniciales.sql
-│   └── 03_consultas.sql
-├── docs/
-│   └── diagrama-er.drawio
-├── reportes/             # PDF generados
+│   ├── main.py             # arma las piezas y arranca la aplicación
+│   ├── crear_admin.py      # crea el usuario Administrador (una sola vez)
+│   ├── configuracion/      # datos de conexión (lee el archivo .env)
+│   ├── dominio/            # entidades y errores del negocio
+│   ├── repositorios/       # consultas SQL con pyodbc
+│   ├── servicios/          # reglas del negocio, permisos y generador de PDF
+│   ├── controladores/      # conectan las vistas con los servicios
+│   └── vistas/             # ventanas de Tkinter
+├── tests/                  # pruebas automáticas (unittest)
+├── sql/                    # 01_crear_tablas, 02_datos_iniciales, 03_indice_administrador_unico
+├── db/                     # respaldo proveedores_db.bak
+├── docs/                   # diagrama-er.drawio y documento-final.md
+├── reportes/               # PDF generados (no se suben a Git)
 ├── diccionario-de-datos.md
+├── docker-compose.yml
+├── restaurar-bd.ps1
+├── .env.example            # plantilla de claves (cada persona crea su .env)
 ├── requirements.txt
 └── README.md
 ```
-
 
 ## 10. Entregables
 
 - [x] Diagrama entidad-relación
 - [x] Diccionario de datos
 - [x] Diagrama relacional de tablas normalizado
-- [x] Explicación general de la aplicación (este documento)
+- [x] Explicación general de la aplicación (este documento y `docs/documento-final.md`)
 - [ ] Aplicación funcionando: ingreso, entidades, transacciones, consultas, reportes y auditoría
 
 
@@ -171,31 +177,29 @@ proyecto-final-bd/
 
 1. Instalar [Docker Desktop](https://www.docker.com/products/docker-desktop/) (con WSL) y abrirlo hasta que diga "Engine running".
 2. Instalar Python 3 y el "ODBC Driver 18 for SQL Server".
-3. Instalar las librerías:
-
-```
-pip install pyodbc reportlab
-```
-
-4. Clonar el repo y entrar a la carpeta:
+3. Clonar el repo y entrar a la carpeta:
 
 ```
 git clone https://github.com/ShanT237/relational-inventory-db
+cd relational-inventory-db
 ```
 
-5. Cargar la base de datos (tarda ~30 segundos y debe terminar con "Listo" en verde):
+4. Instalar las librerías:
+
+```
+pip install -r requirements.txt
+```
+
+5. Crear tu archivo de claves: copiar `.env.example` como `.env` y escribir en `MSSQL_SA_PASSWORD` una clave que tú elijas (mínimo 8 caracteres con mayúsculas, minúsculas, números y símbolos; evita `$ " ' # \`). El archivo `.env` no se sube a Git; la clave de `sa` se pide entre los integrantes por un canal privado, nunca por el repositorio.
+
+```
+Copy-Item .env.example .env
+```
+
+6. Cargar la base de datos (tarda ~30 segundos y debe terminar con "Listo" en verde):
 
 ```
 powershell -ExecutionPolicy Bypass -File restaurar-bd.ps1
-```
-
-6. Copiar `src/configuracion/configuracion_local.ejemplo.py` como `src/configuracion/configuracion_local.py` y dejarlo así:
-
-```python
-SERVIDOR = "127.0.0.1,1433"
-USUARIO = "sa"
-CLAVE = "TrioPerras2026"
-DRIVER = "ODBC Driver 18 for SQL Server"
 ```
 
 ### Cada vez que quieras usar la app
@@ -208,11 +212,22 @@ DRIVER = "ODBC Driver 18 for SQL Server"
 python src/main.py
 ```
 
-4. Entrar con el usuario administrador: **usuario: jjs contraseña: bd**
+4. Entrar con el usuario Administrador (usuario `jjs`). La contraseña no está en el repositorio: pídela al equipo. Si montas una base nueva desde cero, crea el Administrador con `python src/crear_admin.py`.
+
+### Pruebas automáticas
+
+```
+python -m unittest discover -s tests -t . -v
+```
+
+### Base de datos desde cero (sin el respaldo)
+
+Los scripts de `sql/` crean la base vacía y cargan los datos mínimos. Se ejecutan en orden sobre una base ya creada (ver el encabezado de cada script).
 
 ### Notas
 
 - Cada persona tiene su propia copia de la BD; lo que cambie uno no lo ven los demás.
 - Para volver a los datos originales, correr de nuevo `restaurar-bd.ps1`.
 - Para apagar el contenedor: `docker compose stop` (no borra datos). No usar `docker compose down -v`, que sí borra todo.
-- No subir `configuracion_local.py` a GitHub (tiene la clave).
+- No subir `.env` ni `configuracion_local.py` a GitHub (tienen claves). Ambos están en `.gitignore`.
+- La clave de `sa` solo se aplica la primera vez que se crea el contenedor. Para cambiarla en un contenedor que ya existe: `ALTER LOGIN sa WITH PASSWORD = '...'` con `sqlcmd`, y actualizar el `.env`.
