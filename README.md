@@ -167,7 +167,7 @@ proyecto-final-bd/
 - [x] Diccionario de datos
 - [x] Diagrama relacional de tablas normalizado
 - [x] Explicación general de la aplicación (este documento y `docs/documento-final.md`)
-- [ ] Aplicación funcionando: ingreso, entidades, transacciones, consultas, reportes y auditoría
+- [x] Aplicación funcionando: ingreso, entidades, transacciones, consultas, reportes y auditoría
 
 
 
