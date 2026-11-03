@@ -2,7 +2,7 @@
 
 Proyecto final de **Bases de Datos I** — Programa de Ingeniería de Sistemas y Computación, Universidad del Quindío (2026-II).
 
-**Integrantes:** Nombre Apellido, Nombre Apellido, Nombre Apellido
+**Integrantes:** Juan David Tapiero , Santiago Torres, Jose Manuel Bedoya
 
 ## 1. Descripción
 
