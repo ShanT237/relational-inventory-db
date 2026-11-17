@@ -83,9 +83,9 @@ El código se organiza en capas y las vistas no contienen SQL:
 
 # 2. Diagrama entidad-relación
 
-![Diagrama entidad-relación del sistema](img/diagrama-er.png)
+![Diagrama entidad-relación del sistema](../Diagrama%20Entidad%20Relacion%20chen.drawio.png)
 
-El diagrama se edita en `docs/diagrama-er.drawio` (draw.io). Las relaciones son:
+El diagrama está en el archivo `Diagrama Entidad Relacion chen.drawio.png` de la raíz del repositorio. Las relaciones son:
 
 | Entidad 1 | Relación | Entidad 2 | Cardinalidad |
 |-----------|----------|-----------|--------------|
@@ -99,7 +99,9 @@ El diagrama se edita en `docs/diagrama-er.drawio` (draw.io). Las relaciones son:
 
 # 3. Diagrama relacional normalizado
 
-Notación: **PK** llave primaria, **FK** llave foránea (→ tabla referenciada), **UQ** valor único.
+![Diagrama relacional normalizado](../Diagrama-Relacional.png)
+
+El mismo modelo, en texto. Notación: **PK** llave primaria, **FK** llave foránea (→ tabla referenciada), **UQ** valor único.
 
 ```text
 ciudad(PK id_ciudad, nombre, departamento)

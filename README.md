@@ -29,9 +29,11 @@ Es una **aplicación de escritorio**. El enunciado prohíbe usar frameworks, as�
 | Base de datos | Microsoft SQL Server | Almacenamiento de datos (designado por el profesor) |
 | Conexión | `pyodbc` + ODBC Driver for SQL Server | Ejecutar consultas desde Python |
 | Reportes | `reportlab` | Generar los reportes en PDF |
+| Vista previa | `pymupdf` | Mostrar el PDF dentro de la ventana antes de guardarlo |
 | Seguridad | `hashlib` (PBKDF2) | Cifrar las contraseñas |
+| Contenedor | Docker (imagen SQL Server 2025) | Correr la base de datos en local |
 
-Tkinter, `pyodbc` y `reportlab` son librerías, no frameworks.
+Tkinter, `pyodbc`, `reportlab` y `pymupdf` son librerías, no frameworks.
 
 ## 4. Usuarios y permisos
 
@@ -43,7 +45,7 @@ Tkinter, `pyodbc` y `reportlab` son librerías, no frameworks.
 
 Solo el Administrador puede crear usuarios nuevos. Las contraseñas se guardan cifradas.
 
-> **Decisión sobre los reportes:** por ahora el Esporádico **no** genera reportes (el enunciado le deja solo consultas). Si el equipo decide permitírselo, hay que cambiar `requiere_modificar` por `requiere_sesion` en `ReporteServicio.construir` y mostrar la sección Reportes a ese rol en `menu_principal_vista.py`.
+> **Decisión sobre los reportes:** por ahora el Esporádico **no** genera reportes (el enunciado le deja solo consultas). Si el equipo decide permitírselo, hay que cambiar `requiere_modificar` por `requiere_sesion` en `ReporteServicio.construir` y `ReporteServicio.descargar`, y mostrar la sección Reportes a ese rol en `menu_principal_vista.py`.
 
 ## 5. Módulos
 
@@ -62,12 +64,21 @@ Al iniciar sesión se crea un registro en `bitacora` con la fecha y hora de entr
 
 La base de datos tiene 9 tablas: `ciudad`, `categoria`, `tipo_documento`, `rol`, `proveedor`, `producto`, `proveedor_producto`, `usuario` y `bitacora`.
 
-- Diagrama entidad-relación: `docs/diagrama-er.drawio`
+- Diagrama entidad-relación (notación Chen): [`Diagrama Entidad Relacion chen.drawio.png`](Diagrama%20Entidad%20Relacion%20chen.drawio.png)
+- Diagrama relacional normalizado: [`Diagrama-Relacional.png`](Diagrama-Relacional.png)
 - Diccionario de datos: [`diccionario-de-datos.md`](diccionario-de-datos.md)
 - Scripts SQL: [`sql/`](sql/) (`01_crear_tablas.sql`, `02_datos_iniciales.sql` y `03_indice_administrador_unico.sql`)
 - Documento final (explicación, diagramas y diccionario): [`docs/documento-final.md`](docs/documento-final.md)
 
 La relación muchos a muchos entre proveedor y producto se resuelve con la tabla `proveedor_producto`.
+
+**Diagrama entidad-relación**
+
+![Diagrama entidad-relación](Diagrama%20Entidad%20Relacion%20chen.drawio.png)
+
+**Diagrama relacional normalizado**
+
+![Diagrama relacional normalizado](Diagrama-Relacional.png)
 
 ## 7. Consultas mínimas
 
@@ -112,7 +123,7 @@ WHERE NOT EXISTS (
 
 ## 8. Reportes
 
-Todos se generan en PDF y el usuario elige los filtros en listas desplegables antes de generarlos. El PDF se guarda en la carpeta `reportes/` y se abre automáticamente. Lleva encabezado, título, filtros aplicados, tabla, fecha, hora, usuario y número de página.
+Todos se generan en PDF y el usuario elige los filtros en listas desplegables antes de generarlos. Con **Generar PDF** el reporte se muestra como vista previa dentro de la misma ventana; con **Descargar** se abre «Guardar como…» (por defecto en la carpeta `reportes/`), se guarda el archivo y se abre automáticamente. Lleva encabezado, título, filtros aplicados, tabla, fecha, hora, usuario y número de página.
 
 **Productos y proveedores (3 reportes)**
 
@@ -138,7 +149,7 @@ La aplicación se divide en tres capas:
 - **Datos:** acceso a SQL Server con `pyodbc` (`repositorios/`). Todas las consultas usan parámetros para evitar inyección SQL.
 
 ```text
-proyecto-final-bd/
+relational-inventory-db/
 ├── src/
 │   ├── main.py             # arma las piezas y arranca la aplicación
 │   ├── crear_admin.py      # crea el usuario Administrador (una sola vez)
@@ -148,11 +159,13 @@ proyecto-final-bd/
 │   ├── servicios/          # reglas del negocio, permisos y generador de PDF
 │   ├── controladores/      # conectan las vistas con los servicios
 │   └── vistas/             # ventanas de Tkinter
-├── tests/                  # pruebas automáticas (unittest)
+├── tests/                  # pruebas automáticas (unittest): generador de PDF y reportes
 ├── sql/                    # 01_crear_tablas, 02_datos_iniciales, 03_indice_administrador_unico
 ├── db/                     # respaldo proveedores_db.bak
-├── docs/                   # diagrama-er.drawio y documento-final.md
+├── docs/                   # documento-final.md
 ├── reportes/               # PDF generados (no se suben a Git)
+├── Diagrama Entidad Relacion chen.drawio.png   # diagrama entidad-relación
+├── Diagrama-Relacional.png                     # diagrama relacional normalizado
 ├── diccionario-de-datos.md
 ├── docker-compose.yml
 ├── restaurar-bd.ps1
@@ -163,9 +176,9 @@ proyecto-final-bd/
 
 ## 10. Entregables
 
-- [x] Diagrama entidad-relación
-- [x] Diccionario de datos
-- [x] Diagrama relacional de tablas normalizado
+- [x] [Diagrama entidad-relación](Diagrama%20Entidad%20Relacion%20chen.drawio.png)
+- [x] [Diccionario de datos](diccionario-de-datos.md)
+- [x] [Diagrama relacional de tablas normalizado](Diagrama-Relacional.png)
 - [x] Explicación general de la aplicación (este documento y `docs/documento-final.md`)
 - [x] Aplicación funcionando: ingreso, entidades, transacciones, consultas, reportes y auditoría
 
