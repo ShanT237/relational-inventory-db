@@ -227,7 +227,7 @@ class CrudVista:
             self.campos_widgets[campo.clave] = self._crear_widget(marco, campo)
             if campo.ayuda:
                 ttk.Label(marco, text=campo.ayuda, style="Suave.Tarjeta.TLabel",
-                          font=(e.FAMILIA, 8), wraplength=290, justify="left").pack(
+                          font=e.FUENTE_MINI, wraplength=290, justify="left").pack(
                     anchor="w", pady=(3, 0))
 
     def _crear_widget(self, padre, campo):

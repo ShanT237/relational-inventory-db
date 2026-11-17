@@ -1,6 +1,7 @@
 """Tema visual compartido por todas las ventanas (Tkinter/ttk).
 Para cambiar los colores de toda la aplicación basta con editar las constantes."""
 import tkinter as tk
+from tkinter import font as tkfont
 from tkinter import ttk
 
 # --- Paleta ---
@@ -21,12 +22,33 @@ FILA_IMPAR = "#F8FAFC"
 SELECCION = "#DBEAFE"
 
 # --- Tipografías ---
+# Son fuentes con nombre: se crean en aplicar_tema() y se agrandan o achican en vivo
+# cuando cambia el tamaño de la ventana (ver configurar_ventana).
 FAMILIA = "Segoe UI"
-FUENTE = (FAMILIA, 10)
-FUENTE_B = (FAMILIA, 10, "bold")
-FUENTE_PEQ_B = (FAMILIA, 9, "bold")
-FUENTE_SECCION = (FAMILIA, 12, "bold")
-FUENTE_TITULO = (FAMILIA, 20, "bold")
+FUENTE = "FuenteBase"
+FUENTE_B = "FuenteNegrita"
+FUENTE_PEQ_B = "FuentePequenaNegrita"
+FUENTE_MINI = "FuenteMini"
+FUENTE_SECCION = "FuenteSeccion"
+FUENTE_TITULO = "FuenteTitulo"
+FUENTE_ENCABEZADO = "FuenteEncabezado"
+FUENTE_MENU_MARCA = "FuenteMenuMarca"
+FUENTE_LOGIN_MARCA = "FuenteLoginMarca"
+
+_TAMANOS_BASE = {            # nombre: (tamaño en puntos, negrita)
+    FUENTE: (10, False), FUENTE_B: (10, True), FUENTE_PEQ_B: (9, True),
+    FUENTE_MINI: (8, False), FUENTE_SECCION: (12, True), FUENTE_TITULO: (20, True),
+    FUENTE_ENCABEZADO: (18, True), FUENTE_MENU_MARCA: (16, True),
+    FUENTE_LOGIN_MARCA: (24, True),
+}
+_fuentes = {}
+
+
+def _crear_fuentes(raiz):
+    for nombre, (tamano, negrita) in _TAMANOS_BASE.items():
+        _fuentes[nombre] = tkfont.Font(
+            root=raiz, name=nombre, exists=False, family=FAMILIA, size=tamano,
+            weight="bold" if negrita else "normal")
 
 
 def _boton(estilo, nombre, normal, hover, texto, apagado, texto_apagado, **extra):
@@ -43,6 +65,7 @@ def _boton(estilo, nombre, normal, hover, texto, apagado, texto_apagado, **extra
 
 def aplicar_tema(raiz):
     """Configura los estilos ttk. Se llama una vez por cada ventana raíz (tk.Tk)."""
+    _crear_fuentes(raiz)
     estilo = ttk.Style(raiz)
     estilo.theme_use("clam")
     raiz.configure(background=FONDO)
@@ -65,7 +88,7 @@ def aplicar_tema(raiz):
     estilo.configure("Exito.Tarjeta.TLabel", foreground=EXITO)
     estilo.configure("Pagina.TLabel", font=FUENTE_TITULO)
     estilo.configure("Encabezado.TLabel", background=OSCURO, foreground="#FFFFFF",
-                     font=(FAMILIA, 18, "bold"))
+                     font=FUENTE_ENCABEZADO)
     estilo.configure("EncabezadoSub.TLabel", background=OSCURO, foreground="#94A3B8")
 
     # Botones
@@ -139,3 +162,68 @@ def centrar(ventana, ancho, alto, padre=None):
         x = (ventana.winfo_screenwidth() - ancho) // 2
         y = (ventana.winfo_screenheight() - alto) // 2
     ventana.geometry(f"{ancho}x{alto}+{max(x, 0)}+{max(y, 0)}")
+
+
+# Tamaño y estado (normal o maximizada) de la última ventana, para que la siguiente
+# (login -> menú -> login) se abra igual y no vuelva al tamaño por defecto.
+_VENTANA = {"maximizada": False, "geometria": None}
+TAMANO_MINIMO = (1000, 620)     # mismo mínimo para el login y el menú
+TAMANO_INICIAL = (1100, 680)
+_FACTOR_MAXIMO = 1.5
+
+
+def _geometria_dentro_de_pantalla(raiz, geometria):
+    """'ANCHOxALTO+X+Y' -> la misma, pero sin que la ventana se salga de la pantalla."""
+    tam, x, y = geometria.replace("-", "+-").split("+", 2)
+    ancho, alto = (int(v) for v in tam.split("x"))
+    pantalla_w, pantalla_h = raiz.winfo_screenwidth(), raiz.winfo_screenheight()
+    ancho, alto = min(ancho, pantalla_w - 20), min(alto, pantalla_h - 80)
+    x = max(0, min(int(x), pantalla_w - ancho - 10))
+    y = max(0, min(int(y), pantalla_h - alto - 60))
+    return f"{ancho}x{alto}+{x}+{y}"
+
+
+def configurar_ventana(raiz, ancho=None, alto=None, minimo=None, al_escalar=None):
+    """Hace la ventana redimensionable, la abre con el mismo tamaño y estado (normal o
+    maximizada) que tenía la ventana anterior y escala letras y filas según su tamaño.
+    al_escalar(factor) se llama cada vez que cambia la escala (para ajustes propios)."""
+    ancho, alto = (ancho or TAMANO_INICIAL[0]), (alto or TAMANO_INICIAL[1])
+    minimo = minimo or TAMANO_MINIMO
+    raiz.resizable(True, True)
+    raiz.minsize(*minimo)
+    if _VENTANA["geometria"]:
+        raiz.geometry(_geometria_dentro_de_pantalla(raiz, _VENTANA["geometria"]))
+    else:
+        centrar(raiz, ancho, alto)
+    if _VENTANA["maximizada"]:
+        raiz.state("zoomed")
+
+    escala = {"factor": None, "pendiente": None}
+
+    def aplicar_escala():
+        escala["pendiente"] = None
+        factor = min(raiz.winfo_width() / minimo[0], raiz.winfo_height() / minimo[1])
+        factor = round(max(1.0, min(factor, _FACTOR_MAXIMO)) * 20) / 20   # pasos de 0.05
+        if factor == escala["factor"]:
+            return
+        escala["factor"] = factor
+        for nombre, (tamano, _negrita) in _TAMANOS_BASE.items():
+            _fuentes[nombre].configure(size=max(1, round(tamano * factor)))
+        ttk.Style(raiz).configure("Treeview", rowheight=round(34 * factor))
+        if al_escalar:
+            al_escalar(factor)
+
+    def al_cambiar(evento):
+        if evento.widget is not raiz:
+            return
+        estado = raiz.state()
+        if estado == "zoomed":
+            _VENTANA["maximizada"] = True
+        elif estado == "normal":
+            _VENTANA["maximizada"] = False
+            _VENTANA["geometria"] = raiz.geometry()
+        if escala["pendiente"] is None:                 # una sola vez por ráfaga de eventos
+            escala["pendiente"] = raiz.after(60, aplicar_escala)
+
+    raiz.bind("<Configure>", al_cambiar, add="+")
+    raiz.after_idle(aplicar_escala)
