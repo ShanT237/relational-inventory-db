@@ -17,17 +17,16 @@ class LoginVista:
         raiz = tk.Tk()
         raiz.title("Ingreso - Gestión de Proveedores y Productos")
         e.aplicar_tema(raiz)
-        raiz.resizable(False, False)
-        e.centrar(raiz, 800, 480)
+        e.configurar_ventana(raiz, al_escalar=lambda f: ajustar(f))
 
         # Panel izquierdo (marca)
-        lateral = tk.Frame(raiz, bg=e.OSCURO, width=310)
+        lateral = tk.Frame(raiz, bg=e.OSCURO, width=340)
         lateral.pack(side="left", fill="y")
         lateral.pack_propagate(False)
         tk.Frame(lateral, bg=e.PRIMARIO, width=48, height=5).pack(
             anchor="w", padx=36, pady=(110, 18))
         tk.Label(lateral, text="Gestión de\nProveedores\ny Productos", bg=e.OSCURO,
-                 fg="#FFFFFF", font=(e.FAMILIA, 24, "bold"), justify="left").pack(
+                 fg="#FFFFFF", font=e.FUENTE_LOGIN_MARCA, justify="left").pack(
             anchor="w", padx=36)
         tk.Label(lateral, text="Bases de Datos I\nUniversidad del Quindío", bg=e.OSCURO,
                  fg="#94A3B8", font=e.FUENTE, justify="left").pack(
@@ -40,7 +39,7 @@ class LoginVista:
         marco.place(relx=0.5, rely=0.5, anchor="center", width=320)
 
         ttk.Label(marco, text="Bienvenido", style="Seccion.Tarjeta.TLabel",
-                  font=(e.FAMILIA, 20, "bold")).pack(anchor="w")
+                  font=e.FUENTE_TITULO).pack(anchor="w")
         ttk.Label(marco, text="Ingresa tus credenciales para continuar.",
                   style="Suave.Tarjeta.TLabel").pack(anchor="w", pady=(2, 18))
 
@@ -63,6 +62,12 @@ class LoginVista:
         mensaje = ttk.Label(marco, text="", style="Error.Tarjeta.TLabel",
                             wraplength=320, justify="left")
         mensaje.pack(anchor="w", pady=(10, 0))
+
+        def ajustar(factor):
+            """El formulario y el panel de marca crecen con la ventana."""
+            lateral.configure(width=int(340 * factor))
+            marco.place_configure(width=int(320 * factor))
+            mensaje.config(wraplength=int(320 * factor))
 
         def ingresar(_evento=None):
             mensaje.config(text="")
