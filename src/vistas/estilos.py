@@ -1,6 +1,7 @@
 """Tema visual compartido por todas las ventanas (Tkinter/ttk).
 Para cambiar los colores de toda la aplicación basta con editar las constantes."""
 import tkinter as tk
+import re
 from tkinter import font as tkfont
 from tkinter import ttk
 
@@ -34,6 +35,8 @@ FUENTE_TITULO = "FuenteTitulo"
 FUENTE_ENCABEZADO = "FuenteEncabezado"
 FUENTE_MENU_MARCA = "FuenteMenuMarca"
 FUENTE_LOGIN_MARCA = "FuenteLoginMarca"
+
+_GEOMETRIA = re.compile(r"^(\d+)x(\d+)([+-]-?\d+)([+-]-?\d+)$")
 
 _TAMANOS_BASE = {            # nombre: (tamaño en puntos, negrita)
     FUENTE: (10, False), FUENTE_B: (10, True), FUENTE_PEQ_B: (9, True),
@@ -174,12 +177,18 @@ _FACTOR_MAXIMO = 1.5
 
 def _geometria_dentro_de_pantalla(raiz, geometria):
     """'ANCHOxALTO+X+Y' -> la misma, pero sin que la ventana se salga de la pantalla."""
-    tam, x, y = geometria.replace("-", "+-").split("+", 2)
-    ancho, alto = (int(v) for v in tam.split("x"))
+    coincidencia = _GEOMETRIA.match(geometria)
+    if coincidencia is None:
+        return geometria
+    ancho, alto = int(coincidencia.group(1)), int(coincidencia.group(2))
+    x_texto, y_texto = coincidencia.group(3), coincidencia.group(4)
+    # '+-1025' -> -1025 ; '-50' -> -50 ; '+100' -> 100
+    x = int(x_texto.replace("+-", "-").replace("+", ""))
+    y = int(y_texto.replace("+-", "-").replace("+", ""))
     pantalla_w, pantalla_h = raiz.winfo_screenwidth(), raiz.winfo_screenheight()
     ancho, alto = min(ancho, pantalla_w - 20), min(alto, pantalla_h - 80)
-    x = max(0, min(int(x), pantalla_w - ancho - 10))
-    y = max(0, min(int(y), pantalla_h - alto - 60))
+    x = max(0, min(x, pantalla_w - ancho - 10))
+    y = max(0, min(y, pantalla_h - alto - 60))
     return f"{ancho}x{alto}+{x}+{y}"
 
 

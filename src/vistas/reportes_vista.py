@@ -18,7 +18,7 @@ from dominio.excepciones.regla_dominio_error import ReglaDominioError
 from vistas import estilos as e
 
 try:
-    import fitz            # PyMuPDF: convierte las páginas del PDF en imágenes
+    import pymupdf as fitz
 except ImportError:
     fitz = None
 
