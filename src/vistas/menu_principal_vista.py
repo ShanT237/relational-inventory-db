@@ -45,8 +45,7 @@ class MenuPrincipalVista:
         raiz = tk.Tk()
         raiz.title("Gestión de Proveedores y Productos")
         e.aplicar_tema(raiz)
-        raiz.minsize(1100, 640)
-        e.centrar(raiz, 1280, 760)
+        e.configurar_ventana(raiz, al_escalar=lambda f: lateral.configure(width=int(250 * f)))
 
         def terminar(volver):
             self.volver_al_login = volver
@@ -175,7 +174,7 @@ class MenuPrincipalVista:
         tk.Frame(lateral, bg=e.PRIMARIO, width=40, height=4).pack(
             anchor="w", padx=22, pady=(28, 10))
         tk.Label(lateral, text="Proveedores\ny Productos", bg=e.OSCURO, fg="#FFFFFF",
-                 font=(e.FAMILIA, 16, "bold"), justify="left").pack(
+                 font=e.FUENTE_MENU_MARCA, justify="left").pack(
             anchor="w", padx=22, pady=(0, 24))
 
         # --------------------------------------------- zona derecha: barra + contenido
@@ -208,6 +207,12 @@ class MenuPrincipalVista:
             ld = tk.Label(cuerpo, text=descripcion, bg=e.TARJETA, fg=e.SUAVE, font=e.FUENTE,
                           anchor="w", justify="left", wraplength=230)
             ld.pack(fill="x", pady=(6, 0))
+
+            def ajustar_texto(ev):
+                for w in (lt, ld):
+                    w.configure(wraplength=max(80, ev.width - 40))
+
+            cuerpo.bind("<Configure>", ajustar_texto)
 
             def entrar(_ev):
                 for w in (cuerpo, lt, ld):
